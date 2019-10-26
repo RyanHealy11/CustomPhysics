@@ -25,15 +25,28 @@ void game::tick()
 {
 	accumulatedFixedTime += GetFrameTime();
 
-	if (IsMouseButtonPressed(0)) 
+	bool mb0 = IsMouseButtonPressed(0);
+	bool mb1 = IsMouseButtonPressed(1);
+
+	if (mb0 || mb1) 
 	{
 		physObjects.emplace_back();
-		std::cout << "added a physics object!" << std::endl;
+		//std::cout << "added a physics object!" << std::endl;
 
 		auto& babyPhys = physObjects[physObjects.size() - 1];
 		auto mousPos = GetMousePosition();
 		babyPhys.pos = { mousPos.x,mousPos.y };
-		babyPhys.addForce({ 1000,0 });
+		//babyPhys.addForce({ 100,0 });
+
+		if (mb0)
+		{
+			babyPhys.collider = Circle{ 15.0f };
+		}
+		else 
+		{
+			babyPhys.collider = aabb{ {15,15} };
+		}
+
 	}
 }
 
@@ -47,6 +60,22 @@ void game::tickPhys()
 	for (auto& i : physObjects) 
 	{
 		i.tickPhys(targetFixedStep);
+	}
+
+	for (auto &i : physObjects) 
+	{
+		for (auto &j : physObjects)
+			{
+			//skiping self collision
+			if (&i == &j) {continue;}
+
+			bool collision = false;
+
+			i.collider.match([i, j, &collision](Circle c) {if (checkCircleX(i.pos, c, j.pos, j.collider)) { collision = true; }},
+				[i, j, &collision](aabb a) {if (checkAABBX(i.pos, a, j.pos, j.collider)) { collision = true; }});
+
+			if (collision) { resolvePhysBodies(i, j); }
+			}
 	}
 }
 
